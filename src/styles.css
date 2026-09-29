@@ -1,0 +1,102 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Identité visuelle reprise du logo : bleu « Direct », gris « line »,
+   rouge et jaune de la Chine, bleu de la RDC, lignes « circuit ». */
+:root {
+  --navy: #003a90;
+  --blue: #0a67c9;
+  --red: #e02010;
+  --orange: #f07a12;
+  --yellow: #f9c20a;
+  --ink: #3b424d;
+  --line: #e3e8ef;
+  --brand-gradient: linear-gradient(90deg, #e02010 0%, #f07a12 22%, #f9c20a 45%, #0a67c9 72%, #003a90 100%);
+}
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  body { @apply bg-white font-sans text-brand-ink antialiased; }
+  h1, h2, h3, h4 { @apply font-display text-brand-night; }
+  :focus-visible { outline: 3px solid rgb(10 103 201 / 0.45); outline-offset: 2px; }
+  [hidden] { display: none !important; }
+}
+
+@layer components {
+  .container-page { @apply mx-auto w-full max-w-7xl px-4 sm:px-6; }
+
+  /* Mot-symbole du logo : « Direct » en bleu, « line » en gris, italique très gras. */
+  .wordmark { @apply font-display font-extrabold italic leading-none tracking-tight; }
+  .display { @apply font-display font-extrabold italic tracking-tight; }
+
+  /* Reprise de la signature « CHINA TO DRC • DIRECT TO YOU » : trait rouge, texte, trait bleu. */
+  .eyebrow { @apply flex items-center gap-3 font-display text-[11px] font-semibold uppercase tracking-[0.22em] text-brand-ink sm:text-xs; }
+  .eyebrow::before, .eyebrow::after { content: ''; @apply h-[2px] w-7 shrink-0 rounded-full; }
+  .eyebrow::before { background: var(--red); }
+  .eyebrow::after { background: var(--blue); }
+  .eyebrow-light { @apply text-white/80; }
+
+  .brand-bar { background: var(--brand-gradient); }
+  .brand-text { background: linear-gradient(90deg, var(--navy), var(--blue)); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+  .btn { @apply inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl px-5 py-3 font-display text-sm font-bold transition duration-150 disabled:cursor-not-allowed disabled:opacity-60; }
+  .btn-sm { @apply rounded-lg px-3.5 py-2 text-[13px]; }
+  .btn-primary { @apply bg-brand-navy text-white shadow-lg shadow-brand-navy/20 hover:bg-brand-blue; }
+  .btn-blue { @apply bg-brand-blue text-white shadow-lg shadow-brand-blue/20 hover:bg-brand-navy; }
+  .btn-accent { @apply bg-brand-yellow text-brand-night shadow-lg shadow-brand-yellow/25 hover:brightness-105; }
+  .btn-outline { @apply border border-slate-300 bg-white text-brand-night hover:border-brand-blue hover:text-brand-blue; }
+  .btn-ghost { @apply text-brand-night hover:bg-slate-100; }
+  .btn-light { @apply border border-white/30 text-white hover:bg-white/10; }
+  .btn-danger { @apply text-brand-red hover:bg-red-50; }
+  .btn-whatsapp { @apply bg-[#1faa53] text-white shadow-lg shadow-green-900/20 hover:bg-[#178a43]; }
+  .icon-btn { @apply inline-grid h-9 w-9 place-items-center rounded-lg text-slate-500 transition hover:bg-brand-sky hover:text-brand-blue; }
+
+  .card { @apply rounded-2xl border border-[var(--line)] bg-white shadow-[0_10px_30px_-18px_rgba(2,28,74,0.25)]; }
+  .chip { @apply inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-semibold; }
+  .icon-tile { @apply grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-brand-sky text-brand-blue; }
+
+  .label { @apply mb-1.5 block text-xs font-semibold uppercase tracking-wider text-slate-500; }
+  .input { @apply w-full rounded-xl border border-slate-300 bg-white px-3.5 py-3 text-[15px] text-brand-night outline-none transition placeholder:text-slate-400 focus:border-brand-blue focus:ring-4 focus:ring-brand-blue/15; }
+  .help { @apply mt-1 block text-xs text-slate-500; }
+
+  .navlink { @apply rounded-lg px-3 py-2 text-sm font-semibold text-slate-600 transition hover:text-brand-blue; }
+  .navlink[aria-current='page'] { @apply text-brand-navy; box-shadow: inset 0 -2px 0 var(--blue); border-radius: 0; }
+
+  .tab { @apply -mb-px inline-flex items-center gap-2 border-b-2 border-transparent px-1 pb-3 text-sm font-semibold text-slate-500 hover:text-brand-navy; }
+  .tab[aria-current='page'] { @apply border-brand-blue text-brand-navy; }
+
+  .table-base { @apply w-full text-left text-sm; }
+  .table-base th { @apply border-b border-[var(--line)] px-4 py-3 text-[11px] font-bold uppercase tracking-wider text-slate-500; }
+  .table-base td { @apply border-b border-slate-100 px-4 py-3.5 align-middle; }
+  .table-base tr:last-child td { @apply border-b-0; }
+
+  .faq summary { @apply flex cursor-pointer list-none items-center justify-between gap-4 py-4 font-display text-[15px] font-bold text-brand-night; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary .faq-icon { @apply transition-transform; }
+  .faq[open] summary .faq-icon { @apply rotate-45 text-brand-red; }
+
+  .skip-link { @apply sr-only focus:not-sr-only focus:fixed focus:left-4 focus:top-4 focus:z-[60] focus:rounded-lg focus:bg-white focus:px-4 focus:py-2 focus:shadow-lg; }
+}
+
+/* Lignes « circuit » animées, comme les pistes du logo entre les deux drapeaux. */
+.circuit-flow { stroke-dasharray: 4 14; animation: circuit-flow 2.8s linear infinite; }
+@keyframes circuit-flow { to { stroke-dashoffset: -72; } }
+.plane-bob { animation: plane-bob 2.4s ease-in-out infinite; transform-box: fill-box; transform-origin: center; }
+@keyframes plane-bob { 50% { translate: 0 -3px; } }
+.toast-in { animation: toast-in 0.22s ease-out; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(-8px); } }
+.modal-in { animation: modal-in 0.2s ease-out; }
+@keyframes modal-in { from { opacity: 0; transform: translateY(10px) scale(0.98); } }
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  .circuit-flow, .plane-bob, .toast-in, .modal-in { animation: none; }
+}
+
+/* Impression du reçu : seul le bloc #invoice est imprimé. */
+@media print {
+  body.printing > *:not(#invoice) { display: none !important; }
+  body.printing #invoice { display: block !important; }
+  @page { margin: 14mm; }
+}

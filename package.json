@@ -1,0 +1,15 @@
+{
+  "name": "directline-rdc-site",
+  "private": true,
+  "description": "Site Directline RDC — fret aérien Chine → RDC",
+  "scripts": {
+    "build:icons": "node scripts/build-icons.mjs",
+    "build:css": "tailwindcss -i src/styles.css -o assets/styles.css --minify",
+    "build": "npm run build:icons && npm run build:css",
+    "dev": "tailwindcss -i src/styles.css -o assets/styles.css --watch"
+  },
+  "devDependencies": {
+    "lucide": "1.48.0",
+    "tailwindcss": "3.4.17"
+  }
+}
