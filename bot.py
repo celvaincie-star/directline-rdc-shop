@@ -1,4 +1,6 @@
 import os
+import sys
+import time
 import logging
 import base64
 import requests
@@ -12,12 +14,17 @@ logging.basicConfig(
     level=logging.INFO
 )
 logger = logging.getLogger(__name__)
+# httpx logue chaque URL appelée en INFO, or l'URL Telegram contient le TOKEN du bot
+# (https://api.telegram.org/bot<TOKEN>/...). On coupe ces logs pour ne pas l'exposer dans Render.
+logging.getLogger("httpx").setLevel(logging.WARNING)
+logging.getLogger("httpcore").setLevel(logging.WARNING)
 
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 if not TELEGRAM_TOKEN or not GROQ_API_KEY:
     logger.error("⚠️ ERREUR CRITIQUE : Les variables d'environnement TELEGRAM_TOKEN ou GROQ_API_KEY sont manquantes.")
+    sys.exit(1)
 
 groq_client = Groq(api_key=GROQ_API_KEY)
 
@@ -45,10 +52,33 @@ Règles importantes :
 - Sois concis, professionnel et direct.
 """
 
+# Limites anti-abus (chaque message consomme des crédits Groq)
+MAX_TEXTE = 2000            # caractères max par message
+COOLDOWN_SECONDES = 10      # délai minimum entre deux demandes d'un même utilisateur
+MAX_IMAGE_OCTETS = 10 * 1024 * 1024
+_derniere_demande = {}
+
+def trop_rapide(user_id: int) -> bool:
+    """Renvoie True si l'utilisateur a fait une demande il y a moins de COOLDOWN_SECONDES."""
+    maintenant = time.monotonic()
+    if maintenant - _derniere_demande.get(user_id, 0) < COOLDOWN_SECONDES:
+        return True
+    _derniere_demande[user_id] = maintenant
+    return False
+
+async def envoyer_reponse(msg_attente, texte: str):
+    """Envoie la réponse de l'IA en Markdown, ou en texte brut si le Markdown est invalide."""
+    try:
+        await msg_attente.edit_text(texte, parse_mode="Markdown")
+    except Exception:
+        await msg_attente.edit_text(texte)
+
 def encoder_image_en_base64(file_url: str) -> str:
     """Télécharge l'image depuis Telegram et l'encode en base64 pour l'API Vision."""
-    response = requests.get(file_url)
+    response = requests.get(file_url, timeout=20)
     response.raise_for_status()
+    if len(response.content) > MAX_IMAGE_OCTETS:
+        raise ValueError("Image trop volumineuse")
     return base64.b64encode(response.content).decode('utf-8')
 
 async def start(command_update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -66,7 +96,13 @@ async def start(command_update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def gerer_texte(message_update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Traite les messages textuels et liens."""
     texte_recu = message_update.message.text
-    logger.info(f"Message texte reçu : {texte_recu[:50]}...")
+    if trop_rapide(message_update.effective_user.id):
+        await message_update.message.reply_text("⏳ Merci de patienter quelques secondes entre deux demandes.")
+        return
+    if len(texte_recu) > MAX_TEXTE:
+        await message_update.message.reply_text(f"⚠️ Message trop long ({MAX_TEXTE} caractères maximum).")
+        return
+    logger.info(f"Message texte reçu ({len(texte_recu)} caractères)")
     msg_attente = await message_update.message.reply_text("🔎 Analyse de votre demande en cours...")
     
     try:
@@ -79,13 +115,16 @@ async def gerer_texte(message_update: Update, context: ContextTypes.DEFAULT_TYPE
             temperature=0.1,
         )
         reponse_ia = completion.choices[0].message.content
-        await msg_attente.edit_text(reponse_ia, parse_mode="Markdown")
+        await envoyer_reponse(msg_attente, reponse_ia)
     except Exception as e:
         logger.error(f"Erreur lors de l'appel texte Groq : {e}")
         await msg_attente.edit_text("⚠️ Une erreur est survenue lors du traitement de votre texte. Veuillez réessayer.")
 
 async def gerer_photo(photo_update: Update, context: ContextTypes.DEFAULT_TYPE):
     """Traite les captures d'écran et images avec le modèle Vision."""
+    if trop_rapide(photo_update.effective_user.id):
+        await photo_update.message.reply_text("⏳ Merci de patienter quelques secondes entre deux demandes.")
+        return
     logger.info("Capture d'écran reçue, préparation de l'analyse Vision...")
     msg_attente = await photo_update.message.reply_text("🔎 Analyse intelligente de la capture en cours...")
     
@@ -113,7 +152,7 @@ async def gerer_photo(photo_update: Update, context: ContextTypes.DEFAULT_TYPE):
             temperature=0.1,
         )
         reponse_ia = completion.choices[0].message.content
-        await msg_attente.edit_text(reponse_ia, parse_mode="Markdown")
+        await envoyer_reponse(msg_attente, reponse_ia)
     except Exception as e:
         logger.error(f"Erreur lors de l'analyse Vision Groq : {e}")
         await msg_attente.edit_text("⚠️ Je n'ai pas pu analyser cette image de façon fiable. Veuillez envoyer le lien textuel ou une capture plus claire.")
